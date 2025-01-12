@@ -1,4 +1,5 @@
-import tomli, logging, sys, requests, json, shutil, os
+import tomli, logging, sys, requests, json, shutil, os, subprocess
+from subprocess import CalledProcessError
 from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
@@ -118,6 +119,20 @@ def main():
         logging.info(f"summary copied to '{dest_path}' (format={dest_format})")
     except Exception as e:
         logging.error(f"err copying summary - {e}")
+
+    # optional - push the changes to remote
+    try:
+        subprocess.run(["git", "pull"], cwd=dest_path, check=True)
+        subprocess.run(["git", "add", "."], cwd=dest_path, check=True)
+        commit_msg = f"[ladder] Add summary for {summary['date']}"
+        subprocess.run(["git", "commit", "-m", commit_msg], cwd=dest_path, check=True)
+        subprocess.run(["git", "push"], cwd=dest_path, check=True)
+    except CalledProcessError:
+        logging.error(f"git failed to auto commit - {e}")
+        sys.exit(1)
+    except Exception as e:
+        logging.error(f"unknown err pushing changes to remote - {e}")
+        sys.exit(1)
 
     logging.info("done")
 
