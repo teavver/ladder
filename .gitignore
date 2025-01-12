@@ -1,5 +1,6 @@
 .env
 venv
+*.log
 
 # data
 games_raw.json

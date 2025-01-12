@@ -6,7 +6,10 @@ logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
 
 def main():
-    with open("config.toml", mode="rb") as f:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, "config.toml")
+    
+    with open(config_path, mode="rb") as f:
         config = tomli.load(f)
         try:
             expected_keys = [
@@ -127,7 +130,7 @@ def main():
         commit_msg = f"[ladder] Add summary for {summary['date']}"
         subprocess.run(["git", "commit", "-m", commit_msg], cwd=dest_path, check=True)
         subprocess.run(["git", "push"], cwd=dest_path, check=True)
-    except CalledProcessError:
+    except CalledProcessError as e:
         logging.error(f"git failed to auto commit - {e}")
         sys.exit(1)
     except Exception as e:

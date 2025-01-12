@@ -1,6 +1,10 @@
 # ladder
 sc2 ladder progress tracking
 
+## Cron job
+1. `sudo chmod +x run.sh`
+2. `0 12 * * * /<REPO_PATH>/run.sh >> /<REPO_PATH>/cron.log 2>&1`
+
 ## Configuration
 ```toml
 
