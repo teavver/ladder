@@ -1,4 +1,4 @@
-import tomli, logging, sys, requests, json
+import tomli, logging, sys, requests, json, shutil, os
 from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
@@ -8,8 +8,15 @@ def main():
     with open("config.toml", mode="rb") as f:
         config = tomli.load(f)
         try:
-            expected_keys = ["nonapa_user_id", "season", "region_id", "realm_id"]
-            user_id, season, region_id, realm_id = (
+            expected_keys = [
+                "nonapa_user_id",
+                "season",
+                "region_id",
+                "realm_id",
+                "dest_format",
+                "dest_path",
+            ]
+            user_id, season, region_id, realm_id, dest_format, dest_path = (
                 config[key] for key in expected_keys
             )
         except KeyError:
@@ -51,6 +58,7 @@ def main():
             json.dump(games_data, json_file, indent=4)
     except json.JSONDecodeError as e:
         logging.error(f"err parsing json (games_data) - {e}")
+        sys.exit(1)
 
     # get games from prev day
     today = datetime.now().strftime("%b %d %Y")
@@ -77,6 +85,7 @@ def main():
                 new_games.append(game_summary)
             except Exception as e:
                 logging.error(f"failed to summarize game - {e}")
+                sys.exit(1)
 
     wins = len(new_games) - losses
     win_perc = round(wins / len(new_games) * 100)
@@ -85,10 +94,30 @@ def main():
     summary["matches"] = new_games
 
     try:
-        with open("summary.json", "w") as f:
+        fname = f"summary {summary['date']}.json"
+        with open(fname, "w") as f:
             json.dump(summary, f, indent=4)
     except json.JSONDecodeError as e:
         logging.error(f"err parsing json (summary) - {e}")
+        sys.exit(1)
+
+    logging.debug(f"dest path: {dest_path}")
+    if not os.path.exists(dest_path):
+        logging.error(f"destination path does not exist - {dest_path}")
+        sys.exit(1)
+    try:
+        # copy the summary to target dest
+        if dest_format == "markdown":
+            fname = f"summary {summary['date']}.md"
+            with open(fname, "w") as md_file:
+                md_file.write(
+                    f"""## Winrate {winrate}\n\n```json\n{json.dumps(summary, indent=4)}\n```"""
+                )
+
+        shutil.copy(fname, dest_path)
+        logging.info(f"summary copied to '{dest_path}' (format={dest_format})")
+    except Exception as e:
+        logging.error(f"err copying summary - {e}")
 
     logging.info("done")
 
