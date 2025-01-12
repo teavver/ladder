@@ -1,6 +1,7 @@
-import tomli, logging, sys, requests, re, json
+import tomli, logging, sys, requests, json
+from datetime import datetime
 
-logging.basicConfig(format="[%(levelname)s]: %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
 
 def main():
@@ -17,8 +18,8 @@ def main():
             )
             sys.exit(1)
 
-    print(f"Config:")
-    [print(f"{key} : {config[key]}") for key in expected_keys]
+    logging.debug(f"Config:")
+    [logging.debug(f"{key} : {config[key]}") for key in expected_keys]
 
     base_url = (
         f"https://nonapa.com/games/{region_id}/{realm_id}/{user_id}?season={season}"
@@ -39,19 +40,67 @@ def main():
         start += len(data_comment_start)
         games_data = res.text[start:end].strip()
     else:
-        print("gamesData not found")
-        
+        logging.error("gamesData not found")
+        sys.exit(1)
+
     js_var_str = "var gamesData  = "
     games_data = games_data.replace(js_var_str, "")
     try:
         games_data = json.loads(games_data)
-        # print(games_data)
-        with open('games.json', 'w') as json_file:
+        with open("games_raw.json", "w") as json_file:
             json.dump(games_data, json_file, indent=4)
     except json.JSONDecodeError as e:
-        print(f'err parsing json - {e}')
-    
-    print("done")
+        logging.error(f"err parsing json (games_data) - {e}")
+
+    # get games from prev day
+    today = datetime.now().strftime("%b %d %Y")
+    logging.info("Today: %s", today)
+
+    summary = {}
+    new_games = []
+    losses = 0
+    for game in games_data:
+        date = " ".join(game["date"].split()[:3])
+        if is_time_diff_1d(today, date) == True:
+            if not "date" in summary:
+                logging.debug(f"Init summary date with {date}")
+                summary["date"] = date
+            logging.debug(f"Game data: {json.dumps(game, indent=4)}")
+            try:
+                result = "L" if game["resolution"] == "Loss" else "W"
+                losses += result == "L"
+                mode = f"{len(game['members'])}v{len(game['members'])}"
+                game_summary = {
+                    "result": result,
+                    "mode": mode,
+                }
+                new_games.append(game_summary)
+            except Exception as e:
+                logging.error(f"failed to summarize game - {e}")
+
+    wins = len(new_games) - losses
+    win_perc = round(wins / len(new_games) * 100)
+    winrate = f"{len(new_games) - losses}W / {losses}L ({win_perc}%)"
+    summary["winrate"] = winrate
+    summary["matches"] = new_games
+
+    try:
+        with open("summary.json", "w") as f:
+            json.dump(summary, f, indent=4)
+    except json.JSONDecodeError as e:
+        logging.error(f"err parsing json (summary) - {e}")
+
+    logging.info("done")
+
+
+def is_time_diff_1d(date1, date2):
+    format = "%b %d %Y"
+    try:
+        d1 = datetime.strptime(date1, format)
+        d2 = datetime.strptime(date2, format)
+    except Exception as e:
+        logging.error(f"Failed to check time diff - {e}")
+    return (d1 - d2).days == 1
 
 
 def find_nth(source: str, target: str, n: int) -> int:

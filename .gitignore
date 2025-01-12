@@ -1,2 +1,6 @@
 .env
 venv
+
+# data
+games_raw.json
+summary.json
