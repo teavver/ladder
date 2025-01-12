@@ -37,10 +37,21 @@ def main():
     end = find_nth(res.text, data_comment_end, data_idx)
     if start != -1 and end != -1:
         start += len(data_comment_start)
-        json_data_str = res.text[start:end].strip()
-        print(json_data_str)
+        games_data = res.text[start:end].strip()
     else:
         print("gamesData not found")
+        
+    js_var_str = "var gamesData  = "
+    games_data = games_data.replace(js_var_str, "")
+    try:
+        games_data = json.loads(games_data)
+        # print(games_data)
+        with open('games.json', 'w') as json_file:
+            json.dump(games_data, json_file, indent=4)
+    except json.JSONDecodeError as e:
+        print(f'err parsing json - {e}')
+    
+    print("done")
 
 
 def find_nth(source: str, target: str, n: int) -> int:
