@@ -1,6 +1,6 @@
 import tomli, logging, sys, requests, json, shutil, os, subprocess
 from subprocess import CalledProcessError
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 
@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s]: %(message)s")
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, "config.toml")
-    
+
     with open(config_path, mode="rb") as f:
         config = tomli.load(f)
         try:
@@ -66,17 +66,17 @@ def main():
 
     # get games from prev day
     today = datetime.now().strftime("%b %d %Y")
+    target_date = get_prev_day(today)
     logging.info("Today: %s", today)
+    logging.info("Target date: %s", target_date)
 
     summary = {}
     new_games = []
     losses = 0
+    summary["date"] = target_date
     for game in games_data:
         date = " ".join(game["date"].split()[:3])
-        if is_time_diff_1d(today, date) == True:
-            if not "date" in summary:
-                logging.debug(f"Init summary date with {date}")
-                summary["date"] = date
+        if date == target_date:
             logging.debug(f"Game data: {json.dumps(game, indent=4)}")
             try:
                 result = "L" if game["resolution"] == "Loss" else "W"
@@ -92,8 +92,8 @@ def main():
                 sys.exit(1)
 
     wins = len(new_games) - losses
-    win_perc = round(wins / len(new_games) * 100)
-    winrate = f"{len(new_games) - losses}W / {losses}L ({win_perc}%)"
+    win_perc = f"{round(wins / len(new_games) * 100)}%" if len(new_games) > 0 else 'No games'
+    winrate = f"{len(new_games) - losses}W / {losses}L ({win_perc})"
     summary["winrate"] = winrate
     summary["matches"] = new_games
 
@@ -124,31 +124,22 @@ def main():
         logging.error(f"err copying summary - {e}")
 
     # optional - push the changes to remote
-    try:
-        subprocess.run(["git", "pull"], cwd=dest_path, check=True)
-        subprocess.run(["git", "add", "."], cwd=dest_path, check=True)
-        commit_msg = f"[ladder] Add summary for {summary['date']}"
-        subprocess.run(["git", "commit", "-m", commit_msg], cwd=dest_path, check=True)
-        subprocess.run(["git", "push"], cwd=dest_path, check=True)
-    except CalledProcessError as e:
-        logging.error(f"git failed to auto commit - {e}")
-        sys.exit(1)
-    except Exception as e:
-        logging.error(f"unknown err pushing changes to remote - {e}")
-        sys.exit(1)
+    # try:
+    #     subprocess.run(["git", "pull"], cwd=dest_path, check=True)
+    #     subprocess.run(["git", "add", "."], cwd=dest_path, check=True)
+    #     commit_msg = f"[ladder] Add summary for {summary['date']}"
+    #     subprocess.run(["git", "commit", "-m", commit_msg], cwd=dest_path, check=True)
+    #     subprocess.run(["git", "push"], cwd=dest_path, check=True)
+    # except CalledProcessError as e:
+    #     logging.error(f"git failed to auto commit - {e}")
+    #     sys.exit(1)
+    # except Exception as e:
+    #     logging.error(f"unknown err pushing changes to remote - {e}")
+    #     sys.exit(1)
 
     logging.info("done")
-
-
-def is_time_diff_1d(date1, date2):
-    format = "%b %d %Y"
-    try:
-        d1 = datetime.strptime(date1, format)
-        d2 = datetime.strptime(date2, format)
-    except Exception as e:
-        logging.error(f"Failed to check time diff - {e}")
-    return (d1 - d2).days == 1
-
+    
+get_prev_day = lambda date_str: (datetime.strptime(date_str, "%b %d %Y") - timedelta(days=1)).strftime("%b %d %Y") if date_str else None
 
 def find_nth(source: str, target: str, n: int) -> int:
     start = source.find(target)
