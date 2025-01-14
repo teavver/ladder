@@ -29,5 +29,24 @@ realm_id = 1
 dest_format = "markdown"
 
 # the summary will be copied to this path
-dest_path = "/Users/teaver/Documents/Obsidian Vault/remote/SC2/stats"
+dest_path = "/Users/<USER>/Documents/Obsidian Vault/remote/SC2/stats"
+```
+
+## Example summary (JSON)
+
+```json
+{
+    "date": "Jan 12 2025",
+    "winrate": "1W / 1L (50%)",
+    "matches": [
+        {
+            "result": "W",
+            "mode": "1v1"
+        },
+        {
+            "result": "L",
+            "mode": "2v2"
+        }
+    ]
+}
 ```
