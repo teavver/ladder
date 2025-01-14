@@ -6,6 +6,10 @@ sc2 ladder progress tracking
 2. `0 12 * * * /<REPO_PATH>/run.sh >> /<REPO_PATH>/cron.log 2>&1`
 
 ## Configuration
+
+* `--copy`       = Will copy summary to `dest_path`
+* `--pushremote` = Will try to push copied summary to remote in `dest_path`
+
 ```toml
 
 # Go to https://nonapa.com/ & search for your profile
