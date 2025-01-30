@@ -1,6 +1,7 @@
 import tomli, logging, sys, requests, json, shutil, os, subprocess, argparse
 from subprocess import CalledProcessError
 from datetime import datetime, timedelta
+from pathlib import Path
 
 
 def main():
@@ -39,6 +40,10 @@ def main():
 
     logging.debug(f"Config:")
     [logging.debug(f"{key} : {config[key]}") for key in expected_keys]
+
+    if not os.path.exists(dest_path):
+        logging.error(f"destination path does not exist - {dest_path}")
+        sys.exit(1)
 
     base_url = (
         f"https://nonapa.com/games/{region_id}/{realm_id}/{user_id}?season={season}"
@@ -107,30 +112,30 @@ def main():
     summary["winrate"] = winrate
     summary["matches"] = new_games
 
+    # summary json file
+    dir = Path(__file__).resolve().parent
     try:
         fname = f"summary {summary['date']}.json"
-        with open(fname, "w") as f:
+        summary_path = Path.joinpath(dir, fname)
+        with open(summary_path, "w") as f:
             json.dump(summary, f, indent=4)
     except json.JSONDecodeError as e:
         logging.error(f"err parsing json (summary) - {e}")
         sys.exit(1)
 
-    logging.debug(f"dest path: {dest_path}")
-    if not os.path.exists(dest_path):
-        logging.error(f"destination path does not exist - {dest_path}")
-        sys.exit(1)
+    # copy the summary to target dest
     try:
-        # copy the summary to target dest
         if dest_format == "markdown":
             fname = f"summary {summary['date']}.md"
-            with open(fname, "w") as md_file:
+            summary_path = Path.joinpath(dir, fname)
+            with open(summary_path, "w") as md_file:
                 md_file.write(
                     f"""## Winrate {winrate}\n\n```json\n{json.dumps(summary, indent=4)}\n```"""
                 )
 
         # --copy
         if args.copy:
-            shutil.copy(fname, dest_path)
+            shutil.copy(summary_path, dest_path)
             logging.info(f"summary copied to '{dest_path}' (format={dest_format})")
     except Exception as e:
         logging.error(f"err copying summary - {e}")
