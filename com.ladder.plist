@@ -1,0 +1,31 @@
+<!-- https://www.launchd.info/ -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+
+    <key>Label</key>
+    <string>com.ladder.plist</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>12</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/teaver/ladder/stderr.log</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/teaver/ladder/stdout.log</string>
+
+    <key>Program</key>
+    <string>/Users/teaver/ladder/run.sh</string>
+
+  </dict>
+</plist>

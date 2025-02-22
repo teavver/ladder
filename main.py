@@ -12,6 +12,7 @@ def main():
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--copy", action="store_true")
     parser.add_argument("--pushremote", action="store_true")
+    parser.add_argument("--cleanup", action="store_true")
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
@@ -114,8 +115,9 @@ def main():
 
     # summary json file
     dir = Path(__file__).resolve().parent
+    base_fname = f"summary {summary['date']}"
     try:
-        fname = f"summary {summary['date']}.json"
+        fname = f"{base_fname}.json"
         summary_path = Path.joinpath(dir, fname)
         with open(summary_path, "w") as f:
             json.dump(summary, f, indent=4)
@@ -126,7 +128,7 @@ def main():
     # copy the summary to target dest
     try:
         if dest_format == "markdown":
-            fname = f"summary {summary['date']}.md"
+            fname = f"{base_fname}.md"
             summary_path = Path.joinpath(dir, fname)
             with open(summary_path, "w") as md_file:
                 md_file.write(
@@ -154,6 +156,25 @@ def main():
         except CalledProcessError as e:
             logging.error(f"git failed to auto commit - {e}")
             sys.exit(1)
+        except Exception as e:
+            logging.error(f"unknown err pushing changes to remote - {e}")
+            sys.exit(1)
+
+    # --cleanup
+    if args.cleanup:
+        logging.debug("cleaning up local files")
+        try:
+            json_fname = f"{base_fname}.json"
+            json_path = Path.joinpath(dir, json_fname)
+            if json_path.exists():
+                json_path.unlink()
+                logging.debug(f"cleanup local json")
+            if dest_format == 'markdown':
+                md_fname = f"{base_fname}.md"
+                md_path = Path.joinpath(dir, md_fname)
+                if md_path.exists():
+                    md_path.unlink()
+                    logging.debug(f"cleanup local md")
         except Exception as e:
             logging.error(f"unknown err pushing changes to remote - {e}")
             sys.exit(1)
