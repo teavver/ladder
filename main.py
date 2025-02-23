@@ -2,11 +2,12 @@ import tomli, logging, sys, requests, json, shutil, os, subprocess, argparse
 from subprocess import CalledProcessError
 from datetime import datetime, timedelta
 from pathlib import Path
-
+from time import localtime, strftime
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(script_dir, "config.toml")
+    games_path = os.path.join(script_dir, "games_raw.json")
 
     parser = argparse.ArgumentParser(description="Process some boolean flags.")
     parser.add_argument("--debug", action="store_true")
@@ -16,8 +17,9 @@ def main():
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=log_level, format="[%(levelname)s]: %(message)s")
-
+    logging.basicConfig(level=log_level,
+                        format="%(levelname)s [%(asctime)s]: %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S",)
     logging.debug(f"Args: {args}")
     with open(config_path, mode="rb") as f:
         config = tomli.load(f)
@@ -71,8 +73,9 @@ def main():
     js_var_str = "var gamesData  = "
     games_data = games_data.replace(js_var_str, "")
     try:
+
         games_data = json.loads(games_data)
-        with open("games_raw.json", "w") as json_file:
+        with open(games_path, "w") as json_file:
             json.dump(games_data, json_file, indent=4)
     except json.JSONDecodeError as e:
         logging.error(f"err parsing json (games_data) - {e}")
@@ -114,11 +117,10 @@ def main():
     summary["matches"] = new_games
 
     # summary json file
-    dir = Path(__file__).resolve().parent
     base_fname = f"summary {summary['date']}"
     try:
         fname = f"{base_fname}.json"
-        summary_path = Path.joinpath(dir, fname)
+        summary_path = os.path.join(script_dir, fname)
         with open(summary_path, "w") as f:
             json.dump(summary, f, indent=4)
     except json.JSONDecodeError as e:
@@ -129,7 +131,7 @@ def main():
     try:
         if dest_format == "markdown":
             fname = f"{base_fname}.md"
-            summary_path = Path.joinpath(dir, fname)
+            summary_path = os.path.join(script_dir, fname)
             with open(summary_path, "w") as md_file:
                 md_file.write(
                     f"""## Winrate {winrate}\n\n```json\n{json.dumps(summary, indent=4)}\n```"""
@@ -165,14 +167,14 @@ def main():
         logging.debug("cleaning up local files")
         try:
             json_fname = f"{base_fname}.json"
-            json_path = Path.joinpath(dir, json_fname)
-            if json_path.exists():
+            json_path = os.path.join(script_dir, json_fname)
+            if os.path.exists(json_path):
                 json_path.unlink()
                 logging.debug(f"cleanup local json")
             if dest_format == 'markdown':
                 md_fname = f"{base_fname}.md"
-                md_path = Path.joinpath(dir, md_fname)
-                if md_path.exists():
+                md_path = os.path.join(script_dir, md_fname)
+                if os.path.exists(md_path):
                     md_path.unlink()
                     logging.debug(f"cleanup local md")
         except Exception as e:

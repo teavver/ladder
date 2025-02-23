@@ -8,6 +8,12 @@ sc2 ladder progress tracking
 * `0 12 * * * /<REPO_PATH>/run.sh >> /<REPO_PATH>/cron.log 2>&1`
  -->
 
+<!-- 
+ ## launchd
+ `sudo cp ~/ladder/com.ladder.plist ~/Library/LaunchAgents/`
+ `launchctl load ~/Library/LaunchAgents/com.ladder.plist`
+ -->
+
 ## Configuration
 
 | Arg              | Description                                              |

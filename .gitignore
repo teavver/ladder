@@ -1,6 +1,7 @@
 .env
 venv
 *.log
+*launchd*
 
 # data
 games_raw.json
