@@ -169,13 +169,13 @@ def main():
             json_fname = f"{base_fname}.json"
             json_path = os.path.join(script_dir, json_fname)
             if os.path.exists(json_path):
-                json_path.unlink()
+                os.unlink(json_path)
                 logging.debug(f"cleanup local json")
             if dest_format == 'markdown':
                 md_fname = f"{base_fname}.md"
                 md_path = os.path.join(script_dir, md_fname)
                 if os.path.exists(md_path):
-                    md_path.unlink()
+                    os.unlink(md_path)
                     logging.debug(f"cleanup local md")
         except Exception as e:
             logging.error(f"unknown err pushing changes to remote - {e}")
